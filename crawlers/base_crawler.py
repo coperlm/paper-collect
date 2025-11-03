@@ -85,6 +85,21 @@ class BaseCrawler(ABC):
             logger.error(f"解析HTML失败: {e}")
             return None
     
+    def _fetch_url(self, url: str) -> Optional[str]:
+        """
+        获取URL内容并返回文本
+        
+        Args:
+            url: 目标URL
+            
+        Returns:
+            HTML文本，失败返回None
+        """
+        response = self.fetch(url)
+        if response:
+            return response.text
+        return None
+    
     @abstractmethod
     def crawl(self, *args, **kwargs) -> Any:
         """
