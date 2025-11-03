@@ -1,6 +1,6 @@
-# 📚 Paper Collector
+# 📚 IACR Paper Collector
 
-**自动收集密码学与安全顶会论文的一站式工具**
+**自动收集IACR密码学三大会议论文的工具**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.7+](https://img.shields.io/badge/python-3.7+-blue.svg)](https://www.python.org/downloads/)
@@ -10,9 +10,9 @@
 ## 🎯 支持的会议
 
 ### 三大密码学会议
-- **CRYPTO** - 美密会
-- **ASIACRYPT** - 亚密会  
-- **EUROCRYPT** - 欧密会
+- **CRYPTO** - International Cryptology Conference
+- **ASIACRYPT** - International Conference on the Theory and Application of Cryptology and Information Security
+- **EUROCRYPT** - International Conference on the Theory and Applications of Cryptographic Techniques
 
 ### Big 4 安全会议
 - **USENIX Security**
@@ -24,12 +24,11 @@
 
 | 功能 | 说明 |
 |------|------|
-| 📊 **元数据收集** | 从DBLP自动获取论文标题、作者、年份、DOI |
-| 📝 **摘要获取** | 通过Semantic Scholar API补充论文摘要 |
-| 📥 **PDF下载** | 批量下载论文PDF，支持断点续传 |
-| 💾 **多格式存储** | SQLite数据库 + JSON文件 |
+| 📊 **元数据收集** | 从IACR官方JSON API获取论文完整信息 |
+| 📝 **摘要获取** | 包含论文标题、作者、摘要、DOI、eprint链接等 |
+| 💾 **数据库存储** | SQLite数据库持久化存储 |
 | 🌐 **可视化查看** | 本地网页界面，搜索、筛选、浏览 |
-| 🔧 **模块化设计** | 独立模块，易于调试和扩展 |
+| 🔧 **简洁高效** | 直接使用官方API，数据准确可靠 |
 
 ## 🚀 快速开始
 
@@ -42,8 +41,8 @@ pip install -r requirements.txt
 ### 2️⃣ 收集论文
 
 ```bash
-# 测试：收集CRYPTO 2024的论文
-python main.py collect --conferences crypto --years 2024
+# 收集2025年的CRYPTO和EUROCRYPT论文
+python update_iacr_data.py
 ```
 
 ### 3️⃣ 可视化查看
