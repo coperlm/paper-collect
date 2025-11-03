@@ -259,35 +259,37 @@
         // 加载数据
         async function loadData() {
             try {
-                const response = await fetch('data/json/papers_readable.json');
+                const response = await fetch('data/papers_all.json');
                 const data = await response.json();
                 
-                // 展平会议数据
-                allPapers = [];
-                for (const conf in data.conferences) {
-                    allPapers.push(...data.conferences[conf]);
-                }
+                // 获取论文数组
+                allPapers = data.papers || [];
                 
-                // 加载统计
-                const statsResponse = await fetch('data/json/summary.json');
-                const stats = await statsResponse.json();
+                // 计算统计数据
+                const stats = {
+                    total: allPapers.length,
+                    downloaded: allPapers.filter(p => p.download_status === 'downloaded').length,
+                    with_abstract: allPapers.filter(p => p.abstract && p.abstract.trim()).length,
+                    conferences: [...new Set(allPapers.map(p => p.conference))].length
+                };
                 
                 updateStats(stats);
                 populateFilters();
                 filteredPapers = allPapers;
                 displayPapers(allPapers);
             } catch (error) {
+                console.error('加载数据失败:', error);
                 document.getElementById('papers-list').innerHTML = 
-                    '<div class="no-results">无法加载数据。请确保已运行 python main.py export</div>';
+                    '<div class="no-results">无法加载数据。请确保已运行 <code>python paper_tools.py export-json --mode all</code></div>';
             }
         }
         
         // 更新统计
         function updateStats(stats) {
-            document.getElementById('total').textContent = stats.total;
-            document.getElementById('downloaded').textContent = stats.by_download_status.completed || 0;
-            document.getElementById('with-abstract').textContent = stats.with_abstract;
-            document.getElementById('conferences').textContent = Object.keys(stats.by_conference).length;
+            document.getElementById('total').textContent = stats.total || 0;
+            document.getElementById('downloaded').textContent = stats.downloaded || 0;
+            document.getElementById('with-abstract').textContent = stats.with_abstract || 0;
+            document.getElementById('conferences').textContent = stats.conferences || 0;
         }
         
         // 填充筛选器
@@ -321,19 +323,23 @@
                 return;
             }
             
-            container.innerHTML = papers.slice(0, 50).map(paper => `
+            container.innerHTML = papers.slice(0, 50).map(paper => {
+                const isDownloaded = paper.download_status === 'downloaded';
+                const authors = paper.authors || '';
+                
+                return `
                 <div class="paper-card">
                     <div class="paper-title">${escapeHtml(paper.title)}</div>
                     <div class="paper-meta">
                         <span><strong>会议:</strong> ${paper.conference}</span>
                         <span><strong>年份:</strong> ${paper.year}</span>
-                        <span class="badge ${paper.downloaded ? 'badge-success' : 'badge-warning'}">
-                            ${paper.downloaded ? '已下载' : '待下载'}
+                        <span class="badge ${isDownloaded ? 'badge-success' : 'badge-warning'}">
+                            ${isDownloaded ? '已下载' : '待下载'}
                         </span>
                         ${paper.abstract ? '<span class="badge badge-info">有摘要</span>' : ''}
                     </div>
                     <div class="paper-authors">
-                        <strong>作者:</strong> ${paper.authors.join(', ')}
+                        <strong>作者:</strong> ${escapeHtml(authors)}
                     </div>
                     ${paper.abstract ? `
                         <div class="paper-abstract">
@@ -346,7 +352,8 @@
                         ${paper.pdf_path ? `<a href="${paper.pdf_path}" target="_blank">📂 本地</a>` : ''}
                     </div>
                 </div>
-            `).join('');
+            `;
+            }).join('');
             
             if (papers.length > 50) {
                 container.innerHTML += `<div class="no-results">显示前50条结果，共${papers.length}条</div>`;
@@ -363,14 +370,14 @@
             filteredPapers = allPapers.filter(paper => {
                 const matchSearch = !search || 
                     paper.title.toLowerCase().includes(search) ||
-                    paper.authors.some(a => a.toLowerCase().includes(search));
+                    (paper.authors && paper.authors.toLowerCase().includes(search));
                 
                 const matchConference = !conference || paper.conference === conference;
                 const matchYear = !year || paper.year == year;
                 
                 let matchStatus = true;
-                if (status === 'downloaded') matchStatus = paper.downloaded;
-                else if (status === 'pending') matchStatus = !paper.downloaded;
+                if (status === 'downloaded') matchStatus = paper.download_status === 'downloaded';
+                else if (status === 'pending') matchStatus = paper.download_status !== 'downloaded';
                 else if (status === 'with-abstract') matchStatus = !!paper.abstract;
                 
                 return matchSearch && matchConference && matchYear && matchStatus;
@@ -386,14 +393,14 @@
                 ...filteredPapers.map(p => [
                     p.id,
                     p.title,
-                    p.authors.join('; '),
+                    p.authors || '',
                     p.conference,
                     p.year,
                     p.doi || '',
-                    p.downloaded ? 'Yes' : 'No',
+                    p.download_status === 'downloaded' ? 'Yes' : 'No',
                     p.abstract ? 'Yes' : 'No'
                 ])
-            ].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+            ].map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
             
             const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');

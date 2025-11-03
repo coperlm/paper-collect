@@ -12,9 +12,7 @@ dist/
 *.egg-info/
 
 # Data files
-data/pdfs/
-data/*.db
-data/*.sqlite
+data/
 *.pdf
 
 # Logs
