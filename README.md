@@ -20,6 +20,7 @@
 
 - ✅ 自动从DBLP获取论文元数据（标题、作者、年份、DOI等）
 - ✅ **通过Semantic Scholar API获取论文摘要**
+- ✅ **JSON格式导出，数据可视化浏览**
 - ✅ 批量下载PDF文件
 - ✅ SQLite数据库存储，便于查询和管理
 - ✅ 支持断点续传和失败重试
@@ -27,46 +28,45 @@
 - ✅ 详细的日志记录
 - ✅ 进度条显示
 - ✅ 按会议和年份组织文件
+- ✅ **网页可视化查看器**
 
 ## 🚀 快速开始
 
-### 1. 安装依赖
+### 最简单的方式（3步搞定）
 
 ```bash
+# 1. 安装依赖
 pip install -r requirements.txt
+
+# 2. 收集论文（测试：CRYPTO 2024）
+python main.py collect --conferences crypto --years 2024
+
+# 3. 导出并查看
+python main.py export
+# 然后打开 viewer.html 文件！
 ```
 
-### 2. 使用快速启动脚本（Windows）
+### 完整流程（一键完成）
+
+```bash
+python main.py all --with-abstract
+```
+
+这会自动：收集元数据 → 获取摘要 → 下载PDF → 导出JSON
+
+### 使用快速启动脚本（Windows）
 
 ```powershell
 .\start.ps1
 ```
 
-### 3. 或使用命令行
-
-```bash
-# 查看帮助
-python main.py --help
-
-# 收集所有会议的论文元数据
-python main.py collect
-
-# 收集特定会议
-python main.py collect --conferences crypto --years 2024
-
-# 下载所有PDF
-python main.py download
-
-# 执行完整流程（收集+下载）
-python main.py all
-
-# 查看统计信息
-python main.py stats
-```
+交互式菜单，选择你需要的操作。
 
 ## 📖 详细文档
 
-查看 [USAGE.md](USAGE.md) 获取完整的使用指南。
+- 🚀 [QUICKSTART.md](QUICKSTART.md) - 5分钟快速上手
+- 📘 [USAGE.md](USAGE.md) - 完整使用指南
+- 📄 [JSON_GUIDE.md](JSON_GUIDE.md) - JSON格式说明
 
 ## 📁 项目结构
 
@@ -85,12 +85,30 @@ paper-collect/
 │   └── logger.py       # 日志配置
 ├── data/               # 数据目录
 │   ├── papers.db       # SQLite数据库
+│   ├── json/           # JSON导出文件
 │   └── pdfs/           # PDF文件
 ├── main.py             # 主程序
+├── viewer.html         # 网页可视化查看器
+├── enrich_smart.py     # 智能摘要获取
 └── start.ps1           # 快速启动脚本
 ```
 
 ## 🎯 使用示例
+
+### 📊 查看数据（可视化）
+
+**最简单的方式 - 使用网页查看器：**
+
+1. 导出数据：`python main.py export`
+2. 打开 `viewer.html` 文件
+3. 在浏览器中查看、搜索、筛选论文
+
+**功能：**
+- 实时搜索标题和作者
+- 按会议、年份、状态筛选
+- 查看论文摘要
+- 点击链接访问DOI和PDF
+- 导出筛选结果为CSV
 
 ### 收集三大密码学会议2023-2024年的论文
 
@@ -136,22 +154,60 @@ settings:
     retry_delay: 2
 ```
 
-## 📊 数据库查询
+## 📊 数据访问方式
+
+### 方式一：网页查看器（推荐）✨
+
+```bash
+python main.py export
+# 然后打开 viewer.html
+```
+
+**优点：** 可视化、搜索快、易用、无需编程
+
+### 方式二：JSON文件 📄
+
+```bash
+python main.py export
+# 查看 data/json/ 目录
+```
+
+**JSON文件说明：**
+- `papers_readable.json` - 易读格式，按会议分组
+- `all_papers.json` - 完整数据
+- `summary.json` - 统计信息
+- `{会议名}.json` - 各会议单独文件
+
+**Python读取示例：**
+```python
+import json
+with open('data/json/papers_readable.json', 'r', encoding='utf-8') as f:
+    data = json.load(f)
+    
+# 访问CRYPTO的论文
+crypto_papers = data['conferences']['CRYPTO']
+for paper in crypto_papers:
+    print(paper['title'])
+```
+
+查看 [JSON_GUIDE.md](JSON_GUIDE.md) 获取详细说明。
+
+### 方式三：数据库查询 🗄️
 
 数据库文件：`data/papers.db`
 
-可以使用任何SQLite客户端查询：
+使用命令行工具：
+```bash
+python query_db.py list --conference "CRYPTO" --year 2024
+python query_db.py search "quantum"
+python query_db.py export output.csv
+```
 
+使用SQL查询：
 ```sql
--- 查询CRYPTO 2024的所有论文
-SELECT title, authors, pdf_path 
+SELECT title, authors, abstract 
 FROM papers 
 WHERE conference = 'CRYPTO' AND year = 2024;
-
--- 统计各会议论文数
-SELECT conference, year, COUNT(*) as count 
-FROM papers 
-GROUP BY conference, year;
 ```
 
 ## ⚠️ 注意事项

@@ -9,6 +9,11 @@ settings:
     base_path: "data/pdfs"
     organize_by: "conference"  # conference, year, or both
   
+  # JSON存储配置
+  json_storage:
+    path: "data/json"
+    auto_export: true  # 在收集后自动导出
+  
   # 爬虫配置
   crawler:
     user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"

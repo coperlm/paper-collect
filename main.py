@@ -11,6 +11,7 @@ from utils.config import ConfigManager
 from utils.logger import setup_logger
 from utils.database import DatabaseManager
 from utils.downloader import PDFDownloader
+from utils.json_exporter import JSONExporter
 from crawlers.dblp_crawler import DBLPCrawler
 from crawlers.semantic_scholar_crawler import SemanticScholarCrawler
 
@@ -58,6 +59,10 @@ class PaperCollector:
         
         # 初始化Semantic Scholar爬虫（用于获取摘要）
         self.semantic_crawler = SemanticScholarCrawler(crawler_config)
+        
+        # 初始化JSON导出器
+        json_dir = self.config.get_setting('settings', 'json_storage', 'path', default='data/json')
+        self.json_exporter = JSONExporter(db_path, json_dir)
         
         logger.info("论文收集器初始化完成")
     
@@ -232,6 +237,30 @@ class PaperCollector:
         """显示统计信息"""
         self._print_statistics()
     
+    def export_to_json(self, mode: str = 'auto'):
+        """
+        导出数据到JSON文件
+        
+        Args:
+            mode: 导出模式 (all, conference, year, summary, readable, auto)
+        """
+        logger.info(f"开始导出JSON，模式: {mode}")
+        
+        if mode == 'all':
+            self.json_exporter.export_all()
+        elif mode == 'conference':
+            self.json_exporter.export_by_conference()
+        elif mode == 'year':
+            self.json_exporter.export_by_conference_and_year()
+        elif mode == 'summary':
+            self.json_exporter.export_summary()
+        elif mode == 'readable':
+            self.json_exporter.export_readable_format()
+        elif mode == 'auto':
+            self.json_exporter.auto_export()
+        
+        logger.info("JSON导出完成")
+    
     def close(self):
         """清理资源"""
         self.dblp_crawler.close()
@@ -271,6 +300,11 @@ def main():
     # stats命令 - 显示统计信息
     subparsers.add_parser('stats', help='显示统计信息')
     
+    # export命令 - 导出JSON
+    export_parser = subparsers.add_parser('export', help='导出数据到JSON文件')
+    export_parser.add_argument('--mode', choices=['all', 'conference', 'year', 'summary', 'readable', 'auto'],
+                              default='auto', help='导出模式')
+    
     # all命令 - 执行完整流程
     all_parser = subparsers.add_parser('all', help='执行完整流程（收集+下载）')
     all_parser.add_argument('--conferences', nargs='+',
@@ -305,6 +339,9 @@ def main():
         elif args.command == 'stats':
             collector.show_statistics()
         
+        elif args.command == 'export':
+            collector.export_to_json(args.mode)
+        
         elif args.command == 'all':
             logger.info("执行完整流程：收集元数据 -> 获取摘要 -> 下载PDF")
             collector.collect_metadata(args.conferences, args.years)
@@ -314,6 +351,10 @@ def main():
                 collector.enrich_abstracts()
             
             collector.download_pdfs()
+            
+            # 自动导出JSON
+            logger.info("导出数据到JSON...")
+            collector.export_to_json('auto')
         
     except KeyboardInterrupt:
         logger.info("用户中断")

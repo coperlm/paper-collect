@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>论文收集器 - 数据浏览</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 30px;
+            background: #f8f9fa;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .stat-card h3 {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+        }
+        
+        .stat-card .number {
+            color: #667eea;
+            font-size: 2.5em;
+            font-weight: bold;
+        }
+        
+        .controls {
+            padding: 20px 30px;
+            background: white;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        .controls input, .controls select {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        .controls input {
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        .controls button {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .controls button:hover {
+            background: #5568d3;
+        }
+        
+        .papers-list {
+            padding: 30px;
+        }
+        
+        .paper-card {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+        
+        .paper-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        
+        .paper-title {
+            font-size: 1.2em;
+            color: #333;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        
+        .paper-meta {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+        }
+        
+        .paper-meta span {
+            margin-right: 15px;
+        }
+        
+        .paper-authors {
+            color: #888;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+        }
+        
+        .paper-abstract {
+            color: #555;
+            line-height: 1.6;
+            margin-top: 10px;
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 5px;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+        
+        .badge-success {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .badge-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .badge-info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        
+        .links {
+            margin-top: 10px;
+        }
+        
+        .links a {
+            color: #667eea;
+            text-decoration: none;
+            margin-right: 15px;
+        }
+        
+        .links a:hover {
+            text-decoration: underline;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📚 论文收集器</h1>
+            <p>密码学与安全会议论文数据库</p>
+        </div>
+        
+        <div class="stats" id="stats">
+            <div class="stat-card">
+                <h3>总论文数</h3>
+                <div class="number" id="total">-</div>
+            </div>
+            <div class="stat-card">
+                <h3>已下载</h3>
+                <div class="number" id="downloaded">-</div>
+            </div>
+            <div class="stat-card">
+                <h3>有摘要</h3>
+                <div class="number" id="with-abstract">-</div>
+            </div>
+            <div class="stat-card">
+                <h3>会议数</h3>
+                <div class="number" id="conferences">-</div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <input type="text" id="search" placeholder="搜索标题、作者...">
+            <select id="conference">
+                <option value="">所有会议</option>
+            </select>
+            <select id="year">
+                <option value="">所有年份</option>
+            </select>
+            <select id="status">
+                <option value="">所有状态</option>
+                <option value="downloaded">已下载</option>
+                <option value="pending">待下载</option>
+                <option value="with-abstract">有摘要</option>
+            </select>
+            <button onclick="filterPapers()">筛选</button>
+            <button onclick="exportData()">导出CSV</button>
+        </div>
+        
+        <div class="papers-list" id="papers-list">
+            <div class="loading">加载中...</div>
+        </div>
+    </div>
+    
+    <script>
+        let allPapers = [];
+        let filteredPapers = [];
+        
+        // 加载数据
+        async function loadData() {
+            try {
+                const response = await fetch('data/json/papers_readable.json');
+                const data = await response.json();
+                
+                // 展平会议数据
+                allPapers = [];
+                for (const conf in data.conferences) {
+                    allPapers.push(...data.conferences[conf]);
+                }
+                
+                // 加载统计
+                const statsResponse = await fetch('data/json/summary.json');
+                const stats = await statsResponse.json();
+                
+                updateStats(stats);
+                populateFilters();
+                filteredPapers = allPapers;
+                displayPapers(allPapers);
+            } catch (error) {
+                document.getElementById('papers-list').innerHTML = 
+                    '<div class="no-results">无法加载数据。请确保已运行 python main.py export</div>';
+            }
+        }
+        
+        // 更新统计
+        function updateStats(stats) {
+            document.getElementById('total').textContent = stats.total;
+            document.getElementById('downloaded').textContent = stats.by_download_status.completed || 0;
+            document.getElementById('with-abstract').textContent = stats.with_abstract;
+            document.getElementById('conferences').textContent = Object.keys(stats.by_conference).length;
+        }
+        
+        // 填充筛选器
+        function populateFilters() {
+            const conferences = [...new Set(allPapers.map(p => p.conference))].sort();
+            const years = [...new Set(allPapers.map(p => p.year))].sort().reverse();
+            
+            const confSelect = document.getElementById('conference');
+            conferences.forEach(conf => {
+                const option = document.createElement('option');
+                option.value = conf;
+                option.textContent = conf;
+                confSelect.appendChild(option);
+            });
+            
+            const yearSelect = document.getElementById('year');
+            years.forEach(year => {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                yearSelect.appendChild(option);
+            });
+        }
+        
+        // 显示论文
+        function displayPapers(papers) {
+            const container = document.getElementById('papers-list');
+            
+            if (papers.length === 0) {
+                container.innerHTML = '<div class="no-results">没有找到符合条件的论文</div>';
+                return;
+            }
+            
+            container.innerHTML = papers.slice(0, 50).map(paper => `
+                <div class="paper-card">
+                    <div class="paper-title">${escapeHtml(paper.title)}</div>
+                    <div class="paper-meta">
+                        <span><strong>会议:</strong> ${paper.conference}</span>
+                        <span><strong>年份:</strong> ${paper.year}</span>
+                        <span class="badge ${paper.downloaded ? 'badge-success' : 'badge-warning'}">
+                            ${paper.downloaded ? '已下载' : '待下载'}
+                        </span>
+                        ${paper.abstract ? '<span class="badge badge-info">有摘要</span>' : ''}
+                    </div>
+                    <div class="paper-authors">
+                        <strong>作者:</strong> ${paper.authors.join(', ')}
+                    </div>
+                    ${paper.abstract ? `
+                        <div class="paper-abstract">
+                            <strong>摘要:</strong> ${escapeHtml(paper.abstract.substring(0, 300))}${paper.abstract.length > 300 ? '...' : ''}
+                        </div>
+                    ` : ''}
+                    <div class="links">
+                        ${paper.doi ? `<a href="https://doi.org/${paper.doi}" target="_blank">📄 DOI</a>` : ''}
+                        ${paper.pdf_url ? `<a href="${paper.pdf_url}" target="_blank">📥 PDF</a>` : ''}
+                        ${paper.pdf_path ? `<a href="${paper.pdf_path}" target="_blank">📂 本地</a>` : ''}
+                    </div>
+                </div>
+            `).join('');
+            
+            if (papers.length > 50) {
+                container.innerHTML += `<div class="no-results">显示前50条结果，共${papers.length}条</div>`;
+            }
+        }
+        
+        // 筛选论文
+        function filterPapers() {
+            const search = document.getElementById('search').value.toLowerCase();
+            const conference = document.getElementById('conference').value;
+            const year = document.getElementById('year').value;
+            const status = document.getElementById('status').value;
+            
+            filteredPapers = allPapers.filter(paper => {
+                const matchSearch = !search || 
+                    paper.title.toLowerCase().includes(search) ||
+                    paper.authors.some(a => a.toLowerCase().includes(search));
+                
+                const matchConference = !conference || paper.conference === conference;
+                const matchYear = !year || paper.year == year;
+                
+                let matchStatus = true;
+                if (status === 'downloaded') matchStatus = paper.downloaded;
+                else if (status === 'pending') matchStatus = !paper.downloaded;
+                else if (status === 'with-abstract') matchStatus = !!paper.abstract;
+                
+                return matchSearch && matchConference && matchYear && matchStatus;
+            });
+            
+            displayPapers(filteredPapers);
+        }
+        
+        // 导出CSV
+        function exportData() {
+            const csv = [
+                ['ID', 'Title', 'Authors', 'Conference', 'Year', 'DOI', 'Downloaded', 'Has Abstract'],
+                ...filteredPapers.map(p => [
+                    p.id,
+                    p.title,
+                    p.authors.join('; '),
+                    p.conference,
+                    p.year,
+                    p.doi || '',
+                    p.downloaded ? 'Yes' : 'No',
+                    p.abstract ? 'Yes' : 'No'
+                ])
+            ].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+            
+            const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'papers_export.csv';
+            link.click();
+        }
+        
+        // HTML转义
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // 搜索框实时筛选
+        document.getElementById('search').addEventListener('input', filterPapers);
+        
+        // 页面加载时加载数据
+        loadData();
+    </script>
+</body>
+</html>

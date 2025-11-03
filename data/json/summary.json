@@ -1,0 +1,17 @@
+{
+  "total": 809,
+  "with_abstract": 2,
+  "by_conference": {
+    "CRYPTO": 809
+  },
+  "by_conference_and_year": {
+    "CRYPTO": {
+      "2025": 26,
+      "2024": 783
+    }
+  },
+  "by_download_status": {
+    "completed": 5,
+    "pending": 804
+  }
+}
